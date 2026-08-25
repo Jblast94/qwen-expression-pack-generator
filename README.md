@@ -9,7 +9,8 @@ Expression Pack Generator for **SillyTavern** + **Lumiverse**, powered by your H
 ├── qwen_client.py         # Gradio queue client for the HF space
 ├── expressions.py         # Expression presets (standard 28 + NSFW)
 ├── packager.py            # SillyTavern ZIP + Lumiverse CHARX builders
-├── requirements.txt
+├── pyproject.toml         # Project config (uv)
+├── requirements.txt       # Fallback / lock-compatible
 ├── README.md
 └── st-extension/          # SillyTavern extension
     ├── index.js
@@ -17,13 +18,34 @@ Expression Pack Generator for **SillyTavern** + **Lumiverse**, powered by your H
     └── style.css
 ```
 
-## Quick Start – Backend
+## Quick Start – Backend (uv)
 
 ```bash
-pip install -r requirements.txt
-export HF_TOKEN=hf_xxxxxxxx   # optional but recommended
-python app.py
+# Install uv if you don't have it yet
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone & enter
+git clone https://github.com/Jblast94/qwen-expression-pack-generator.git
+cd qwen-expression-pack-generator
+
+# Create venv + install everything in one step
+uv sync
+
+# Optional but recommended
+export HF_TOKEN=hf_xxxxxxxx
+
+# Run
+uv run python app.py
 # → http://localhost:7865
+```
+
+### Alternative (still using uv)
+
+```bash
+uv venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+python app.py
 ```
 
 ## Quick Start – SillyTavern Extension
@@ -53,6 +75,16 @@ Returns download URLs for both the SillyTavern ZIP and Lumiverse CHARX.
 - `standard_28` – classic SillyTavern / Lumiverse emotions
 - `nsfw_extra` – flirty, seductive, lustful, soft ahegao, afterglow, etc.
 - `full_pack` – both (recommended)
+
+## Development
+
+```bash
+# Add a new dependency
+uv add some-package
+
+# Run with hot-reload (uvicorn)
+uv run uvicorn app:app --host 0.0.0.0 --port 7865 --reload
+```
 
 ## License
 
