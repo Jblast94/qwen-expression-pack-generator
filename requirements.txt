@@ -1,3 +1,6 @@
+# Generated / kept for compatibility.
+# Preferred way: use `uv sync` (see pyproject.toml)
+
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 gradio>=5.0.0
