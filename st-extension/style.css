@@ -1,0 +1,33 @@
+.qwen-exp-settings {
+    margin-top: 10px;
+}
+
+.qwen-exp-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.qwen-exp-row label {
+    font-size: 0.9em;
+    margin-bottom: 3px;
+    opacity: 0.85;
+}
+
+.qwen-exp-row input[type="text"],
+.qwen-exp-row input[type="number"],
+.qwen-exp-row select {
+    width: 100%;
+}
+
+.qwen-exp-hint {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+#qwen-exp-generate {
+    width: 100%;
+    margin-top: 6px;
+}
