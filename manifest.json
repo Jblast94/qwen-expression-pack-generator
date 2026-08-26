@@ -1,0 +1,12 @@
+{
+    "display_name": "Qwen Expression Pack",
+    "loading_order": 50,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Jblast94",
+    "version": "1.1.0",
+    "homePage": "https://github.com/Jblast94/qwen-expression-pack-generator",
+    "auto_update": true
+}
