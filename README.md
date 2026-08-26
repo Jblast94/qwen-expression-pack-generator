@@ -1,95 +1,100 @@
 # Qwen Expression Pack Generator
 
-Expression Pack Generator for **SillyTavern** + **Lumiverse**, powered by [`jblast94/Qwen-Image-Edit-NSFW`](https://huggingface.co/spaces/jblast94/Qwen-Image-Edit-NSFW).
+Standalone **expression-pack** service + SillyTavern extension.
 
-Fully containerized so it is reachable from Docker, your browser, and Tailnet / Docktail.
+- **Backend**: containerized FastAPI/Gradio — deploy on any Dockhand/Hawser node
+- **Frontend**: pure ST extension, installable by **Git URL**
+- Reachable over **Tailscale / Docktail** (no localhost coupling to ST)
 
-## Repository Structure
+Powered by [`jblast94/Qwen-Image-Edit-NSFW`](https://huggingface.co/spaces/jblast94/Qwen-Image-Edit-NSFW).
 
-```
-├── app.py
-├── qwen_client.py
-├── expressions.py
-├── packager.py
-├── pyproject.toml
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml          # Full stack: SillyTavern + expression-pack
-├── README.md
-└── st-extension/               # Drop into ST third-party extensions
-    ├── index.js
-    ├── manifest.json
-    └── style.css
-```
+---
 
-## Recommended: Docker Compose (with your SillyTavern)
+## 1. Deploy the service (any node)
 
-1. Place this repo next to (or copy the files into) your existing ST compose directory, **or** merge the `expression-pack` service from `docker-compose.yml` into your current compose.
-
-2. Make sure the ST extension is available:
+On the machine that should run the generator (`ai1` or a worker):
 
 ```bash
-# Copy extension into the folder that is mounted as third-party extensions
-cp -r st-extension ./extensions/st-expression-pack-extension
+git clone https://github.com/Jblast94/qwen-expression-pack-generator.git
+cd qwen-expression-pack-generator
+
+export HF_TOKEN=hf_xxxxxxxx   # optional, recommended
+
+# Standalone stack — does NOT touch SillyTavern
+docker compose -f docker-compose.service.yml up -d --build
 ```
 
-3. Start the stack:
+Or import `docker-compose.service.yml` as a stack in **Dockhand** on `ai1` and let Hawser deploy it.
 
-```bash
-export HF_TOKEN=hf_xxxxxxxx   # optional but recommended
-docker compose up -d --build
+Listens on **7865**. Docktail labels are included:
+
+```yaml
+docktail.service.enable=true
+docktail.service.name=expression-pack
+docktail.service.port=7865
 ```
 
-4. Open SillyTavern → Extensions → **Qwen Expression Pack**
+---
 
-5. Set **Backend URL** to one of:
-   - `http://localhost:7865`          (same machine browser)
-   - `http://<your-tailnet-ip>:7865`  (other devices on Tailnet)
-   - your Docktail URL for `expression-pack`
+## 2. Install the SillyTavern extension (Git URL)
 
-6. Select a character with an avatar → **Generate Expression Pack**
+In SillyTavern:
 
-### Why not `http://expression-pack:7865`?
+**Extensions → Install Extension → Git URL**
 
-The extension runs **in the browser**, not inside the SillyTavern container.  
-`expression-pack` is only resolvable on the Docker network. The browser needs a host-reachable address (published port 7865 or Docktail).
-
-## Standalone (no ST in the same compose)
-
-```bash
-docker build -t expression-pack .
-docker run -d --name expression-pack \
-  -p 7865:7865 \
-  -e HF_TOKEN=hf_xxxxxxxx \
-  -v expression-pack-data:/tmp/expression_packs \
-  expression-pack
+```
+https://github.com/Jblast94/qwen-expression-pack-generator
 ```
 
-## Local (uv, no Docker)
+**Branch: `extension`**
+
+That branch has `manifest.json`, `index.js`, and `style.css` at the **repo root**, so ST installs it like any other third-party extension.
+
+---
+
+## 3. Point the extension at the service
+
+The extension runs **in the browser**. Set **Backend URL** to whatever reaches the container from that browser:
+
+| From | Backend URL |
+|------|-------------|
+| Same machine as the container | `http://localhost:7865` |
+| Another node on Tailscale | `http://<magicdns-or-tailnet-ip>:7865` |
+| Via Docktail | `https://expression-pack.<your-docktail-host>` |
+
+Do **not** use `http://expression-pack:7865` — that name only exists on the Docker network, not in the browser.
+
+---
+
+## API (agents / n8n)
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv sync
-export HF_TOKEN=hf_xxxxxxxx
-uv run python app.py
-# → http://localhost:7865
-```
-
-## API
-
-```bash
-curl -X POST http://localhost:7865/api/generate \
+curl -X POST http://<host>:7865/api/generate \
   -F "file=@reference.png" \
   -F "preset=full_pack" \
   -F "character_name=Missy" \
   -F "steps=4"
 ```
 
-## Presets
+Presets: `standard_28` | `nsfw_extra` | `full_pack`
 
-- `standard_28` – classic SillyTavern / Lumiverse emotions  
-- `nsfw_extra` – flirty, seductive, lustful, soft ahegao, afterglow, etc.  
-- `full_pack` – both (recommended)
+---
+
+## Repo layout
+
+```
+main branch
+├── app.py, qwen_client.py, expressions.py, packager.py
+├── Dockerfile
+├── docker-compose.service.yml   ← use this (standalone)
+├── docker-compose.yml           ← optional example only
+└── extension/ / st-extension/    ← extension source
+
+extension branch
+├── manifest.json, index.js, style.css   ← at root for ST Git install
+```
+
+---
 
 ## License
 
