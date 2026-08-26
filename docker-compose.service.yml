@@ -1,0 +1,40 @@
+# Standalone Expression Pack service
+# Deploy this on ANY node (ai1 or workers) via Dockhand / docker compose.
+# Reachable over Tailnet + Docktail labels.
+#
+# Usage:
+#   export HF_TOKEN=hf_xxx
+#   docker compose -f docker-compose.service.yml up -d --build
+#
+# Or import this stack into Dockhand on ai1 and let Hawser agents pull it.
+
+services:
+  expression-pack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: expression-pack:latest
+    container_name: expression-pack
+    hostname: expression-pack
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    ports:
+      - "7865:7865"
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=expression-pack"
+      - "docktail.service.port=7865"
+      - "docktail.service.service-port=443"
+    volumes:
+      - expression-pack-data:/tmp/expression_packs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7865/api/presets"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+
+volumes:
+  expression-pack-data:
