@@ -1,0 +1,76 @@
+# Expression Pack Generator + SillyTavern
+# ---------------------------------------
+# expression-pack is fully containerized so it is reachable from:
+#   • the Docker network (service name: expression-pack)
+#   • your browser / Tailnet via published port 7865
+#   • Docktail (labels below)
+#
+# IMPORTANT: The SillyTavern *extension* runs in the BROWSER, not inside
+# the ST container. Therefore the extension must point at a host-reachable
+# URL (localhost:7865, your Tailnet IP/hostname, or the Docktail URL).
+
+services:
+  sillytavern:
+    image: ghcr.io/sillytavern/sillytavern:staging
+    container_name: sillytavernui
+    hostname: sillytavernui
+    environment:
+      - NODE_ENV=production
+      - FORCE_COLOR=1
+    ports:
+      - "8000:8000"
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=sillytavern"
+      - "docktail.service.port=8080"
+      - "docktail.service.service-port=443"
+    volumes:
+      - ./config:/home/node/app/config
+      - sillytavern-data:/home/node/app/data
+      - ./plugins:/home/node/app/plugins
+      - ./extensions:/home/node/app/public/scripts/extensions/third-party
+    depends_on:
+      expression-pack:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - st-net
+
+  expression-pack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: expression-pack:latest
+    container_name: expression-pack
+    hostname: expression-pack
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    ports:
+      # Browser / Tailnet / Docktail access
+      - "7865:7865"
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=expression-pack"
+      - "docktail.service.port=7865"
+      - "docktail.service.service-port=443"
+    volumes:
+      # Persist generated ZIPs across restarts
+      - expression-pack-data:/tmp/expression_packs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7865/api/presets"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - st-net
+
+networks:
+  st-net:
+    driver: bridge
+
+volumes:
+  sillytavern-data:
+  expression-pack-data:
