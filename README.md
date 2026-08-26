@@ -1,90 +1,95 @@
 # Qwen Expression Pack Generator
 
-Expression Pack Generator for **SillyTavern** + **Lumiverse**, powered by your Hugging Face space [`jblast94/Qwen-Image-Edit-NSFW`](https://huggingface.co/spaces/jblast94/Qwen-Image-Edit-NSFW).
+Expression Pack Generator for **SillyTavern** + **Lumiverse**, powered by [`jblast94/Qwen-Image-Edit-NSFW`](https://huggingface.co/spaces/jblast94/Qwen-Image-Edit-NSFW).
+
+Fully containerized so it is reachable from Docker, your browser, and Tailnet / Docktail.
 
 ## Repository Structure
 
 ```
-├── app.py                 # FastAPI + Gradio backend
-├── qwen_client.py         # Gradio queue client for the HF space
-├── expressions.py         # Expression presets (standard 28 + NSFW)
-├── packager.py            # SillyTavern ZIP + Lumiverse CHARX builders
-├── pyproject.toml         # Project config (uv)
-├── requirements.txt       # Fallback / lock-compatible
+├── app.py
+├── qwen_client.py
+├── expressions.py
+├── packager.py
+├── pyproject.toml
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml          # Full stack: SillyTavern + expression-pack
 ├── README.md
-└── st-extension/          # SillyTavern extension
+└── st-extension/               # Drop into ST third-party extensions
     ├── index.js
     ├── manifest.json
     └── style.css
 ```
 
-## Quick Start – Backend (uv)
+## Recommended: Docker Compose (with your SillyTavern)
+
+1. Place this repo next to (or copy the files into) your existing ST compose directory, **or** merge the `expression-pack` service from `docker-compose.yml` into your current compose.
+
+2. Make sure the ST extension is available:
 
 ```bash
-# Install uv if you don't have it yet
+# Copy extension into the folder that is mounted as third-party extensions
+cp -r st-extension ./extensions/st-expression-pack-extension
+```
+
+3. Start the stack:
+
+```bash
+export HF_TOKEN=hf_xxxxxxxx   # optional but recommended
+docker compose up -d --build
+```
+
+4. Open SillyTavern → Extensions → **Qwen Expression Pack**
+
+5. Set **Backend URL** to one of:
+   - `http://localhost:7865`          (same machine browser)
+   - `http://<your-tailnet-ip>:7865`  (other devices on Tailnet)
+   - your Docktail URL for `expression-pack`
+
+6. Select a character with an avatar → **Generate Expression Pack**
+
+### Why not `http://expression-pack:7865`?
+
+The extension runs **in the browser**, not inside the SillyTavern container.  
+`expression-pack` is only resolvable on the Docker network. The browser needs a host-reachable address (published port 7865 or Docktail).
+
+## Standalone (no ST in the same compose)
+
+```bash
+docker build -t expression-pack .
+docker run -d --name expression-pack \
+  -p 7865:7865 \
+  -e HF_TOKEN=hf_xxxxxxxx \
+  -v expression-pack-data:/tmp/expression_packs \
+  expression-pack
+```
+
+## Local (uv, no Docker)
+
+```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Clone & enter
-git clone https://github.com/Jblast94/qwen-expression-pack-generator.git
-cd qwen-expression-pack-generator
-
-# Create venv + install everything in one step
 uv sync
-
-# Optional but recommended
 export HF_TOKEN=hf_xxxxxxxx
-
-# Run
 uv run python app.py
 # → http://localhost:7865
 ```
 
-### Alternative (still using uv)
-
-```bash
-uv venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-uv pip install -r requirements.txt
-python app.py
-```
-
-## Quick Start – SillyTavern Extension
-
-1. Copy the entire `st-extension/` folder into:
-   `SillyTavern/public/scripts/extensions/third-party/st-expression-pack-extension/`
-2. Restart SillyTavern or enable the extension in the Extensions panel
-3. Select a character that has an avatar
-4. Open **Extensions** settings → **Qwen Expression Pack**
-5. Click **Generate Expression Pack for Current Character**
-6. The ZIP downloads automatically → use **Upload sprite pack (ZIP)** in Character Expressions
-
 ## API
 
 ```bash
-curl -X POST http://localhost:7865/api/generate \\
-  -F "file=@reference.png" \\
-  -F "preset=full_pack" \\
-  -F "character_name=Missy" \\
+curl -X POST http://localhost:7865/api/generate \
+  -F "file=@reference.png" \
+  -F "preset=full_pack" \
+  -F "character_name=Missy" \
   -F "steps=4"
 ```
 
-Returns download URLs for both the SillyTavern ZIP and Lumiverse CHARX.
-
 ## Presets
 
-- `standard_28` – classic SillyTavern / Lumiverse emotions
-- `nsfw_extra` – flirty, seductive, lustful, soft ahegao, afterglow, etc.
+- `standard_28` – classic SillyTavern / Lumiverse emotions  
+- `nsfw_extra` – flirty, seductive, lustful, soft ahegao, afterglow, etc.  
 - `full_pack` – both (recommended)
-
-## Development
-
-```bash
-# Add a new dependency
-uv add some-package
-
-# Run with hot-reload (uvicorn)
-uv run uvicorn app:app --host 0.0.0.0 --port 7865 --reload
-```
 
 ## License
 
