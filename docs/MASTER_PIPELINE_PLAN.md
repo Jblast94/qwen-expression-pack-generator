@@ -1,6 +1,6 @@
 # Master Pipeline Plan — Character Sprites, Grok Imagine & Eliza Swarm
 
-**Status:** Draft v1.1 (2026-08-31)  
+**Status:** Draft v1.2 (2026-08-31)  
 **Owner:** Jblast94  
 **Repos involved:** `qwen-expression-pack-generator`, `xcreator-pipeline`  
 **Goal:** One modular, cheap, expandable pipeline that turns a single reference image + trend data into persistent characters, expression packs, social posts, and monetized content — without a monolith.
@@ -14,7 +14,7 @@
 - **Generators are swappable.** Imagine first, Qwen fallback, HF Spaces as CPU workers.
 - **Memory compounds.** Every decision, prompt, asset, and result is stored. Nothing evaporates between sessions.
 - **Agents are a crew, not scripts.** Persistent characters with roles, history, and handoffs.
-- **Slow and simple first.** Prove each piece works before adding the next layer.
+- **Slow and simple first.** Prove each piece works before adding the next layer. Do a little at a time.
 
 ---
 
@@ -48,17 +48,18 @@
 **What it does today:** Takes one reference image → generates expression set via `jblast94/Qwen-Image-Edit-NSFW` HF Space → packages into SillyTavern ZIP + Lumiverse CHARX.
 
 **Known issues to fix:**
-- RunPod worker returns the *same* image (no actual edit). **Deferred** — do not spend money on it during development.
+- RunPod worker returns the *same* image (no actual edit). **Deferred entirely** — do not spend money on it during development. Cost adds up fast.
 - Qwen space errors intermittently from the worker even though the space works fine in-account.
 - Output is hard-wired to SillyTavern; needs gallery + ZIP-first path.
 
-**Immediate upgrades (keep it simple):**
+**Immediate upgrades (keep it simple, slow):**
 1. Add `gallery` output mode (write to a simple folder or later MinIO + Postgres row, skip ST packaging by default).
 2. Add `imagine` backend toggle (call Grok Imagine API when safe; fall back to Qwen).
 3. Fix Qwen error handling: better surfacing + retry with jitter.
 4. Keep ST/Lumiverse as *optional export*, not the default.
 5. Expose clean `/api/generate` for n8n + Dagger + Eliza to call.
-6. Orchestrate generation through Hugging Face Gradio Spaces in plain Python.
+6. Orchestrate generation through Hugging Face Gradio Spaces in plain Python (read `agents.md`, call, poll).
+7. Prove: one reference image → a few expressions → basic post data. No database yet.
 
 ---
 
@@ -69,6 +70,7 @@
 - **Routing rule:** If prompt is safe → Imagine. If moderated/filtered/NSFW → queue to Qwen space fallback.
 - **Three X accounts** = three API keys = three rate pools. Fan out the same trend across accounts.
 - **No RunPod** until explicitly re-enabled.
+- Prefer plain Python + xai_sdk or OpenAI-compatible client. Keep front-end simple.
 
 ---
 
@@ -81,6 +83,7 @@
 - They pull from the shared gallery for visual context.
 - Memory layer: decisions, what worked, what failed — survives between sessions.
 - Old RuCode-style task structure (clear roles, explicit handoffs) is the template.
+- Bring back the autonomous X characters; tweak configs, re-point storage.
 
 ---
 
@@ -94,7 +97,7 @@
 - **Valkey** for rate limits, cache, queues only — never vectors.
 - Homelab cleanup: pick the worst directory, move into clean structure, one at a time.
 
-**Now:** Prove the connector with one table before migrating everything.
+**Now:** Prove the connector with one table before migrating everything. Easy connector (Neon/Supabase) — whoever owns it, help create the Space.
 
 ---
 
@@ -104,6 +107,7 @@
 - **n8n** (Docker, upgraded) as the workflow glue + AI sandbox on HF CPU Spaces.
 - **HF CPU Spaces** as cheap burst workers (2 vCPU / 16 GB free tier, multiple Spaces).
 - **RunPod Flash** — deferred. Not used during development.
+- Everything can stay in Python. Front-end stays simple.
 
 ---
 
@@ -124,7 +128,7 @@ Start with **one category, one program, one account**. Close the loop end-to-end
 
 | Agent | Role | First task |
 |-------|------|------------|
-| **Architect** | Owns this plan, keeps pieces modular | Review + approve this doc |
+| **Architect** | Owns this plan, keeps pieces modular | Review + approve this doc (v1.2) |
 | **Sprite Engineer** | Fixes qwen-expression-pack-generator | Gallery mode + Imagine toggle (no RunPod) |
 | **Imagine Router** | Builds Grok Imagine client + fallback logic | Endpoint + moderation handoff |
 | **Eliza Keeper** | Maintains persistent characters + memory | Re-point old characters at new Postgres/Valkey |
@@ -141,14 +145,16 @@ Each agent gets a short brief, a single repo or service to own, and a clear hand
 ## 10. Phased Rollout
 
 **Phase 0 — Now (this session)**
-- This plan committed to repo.
+- This plan committed to repo (v1.2).
 - Issues created for each agent's first task.
 - RunPod deferred.
+- Daily QA automation active.
 
 **Phase 1 — Sprite hardening (1–2 days)**
 - Gallery output, Imagine toggle, Qwen error handling.
 - Test: one reference image → gallery folder, no ST required.
 - First simple Dagger pipeline.
+- No database yet.
 
 **Phase 2 — Storage consolidation (2–3 days)**
 - Single Postgres schema (Neon/Supabase), MinIO buckets, Valkey only for cache.
